@@ -156,7 +156,9 @@ void encrypt(bool* L[], bool* R[], bool* key[]) {
 		subkeys[i] = new bool[48];
 	}
 	// Replace this with the subkey function
-	generateSubkeys(subkeys);
+	//Not quite sure the best way to change this,
+	//but I did change the function name to what I called it
+	subkey(subkeys);
 	IP(L, R);
 	
 	for (int i = 0; i < 16; ++i) {
@@ -169,6 +171,56 @@ void encrypt(bool* L[], bool* R[], bool* key[]) {
 	}
 	
 	FP(L, R);
+}
+
+//This isn't quite right yet. Since the subkey is a different length than 
+// the key, I'm trying to figure out the best way to get back the subkey
+//right now it just generates the subkey and doesn't return anything
+// this might be terrible code, and if so, I'm sorry
+void subkey(bool* key[], int keyNum ) {
+  bool* newKey = new bool[64];
+  for(int i =0; i < 64; i++){
+    newKey[i] = key[PC1_index(i)];
+  }
+  bool* C0 = new bool[32];
+  bool* D0 = new bool[32];
+  for(int i =0; i<32; i++){
+    C0[i] = newKey[i];
+    D0[i] = newKey[i+32];
+  }
+  delete[] newKey;
+  int totalShift = 0;
+  for( int i = 0; i < keyNum; i++ ) {
+    totalShift += keyShifts[i];
+  }
+  bool* Ci = new bool[32];
+  bool* Di = new bool[32];
+  for(int i = totalShift; i < 32; i++) {
+    Ci[i-totalShift] = C0[i];
+    Di[i-totalShift] = D0[i];
+  }
+  for(int i = 0; i < totalShift; i++){
+    Ci[32-totalShift+i] = C0[i]; 
+    Di[32-totalShift+i] = D0[i]; 
+  }
+  delete[] C0;
+  delete[] D0;
+
+  bool* almostThere = new bool[64];
+
+  for(int i = 0; i < 32; i++) {
+    almostThere[i] = Ci[i];
+    almostThere[i+32] = Di[i];
+  }
+  delete[] Ci;
+  delete[] Di;
+
+  bool subKey = new bool[48];
+
+  for(int i = 0; i < 48; i++) {
+    subKey[i] = almostThere[PC2_index(i)];
+  }
+
 }
 
 int main(int argc, char* argv[]) {
