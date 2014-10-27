@@ -8,7 +8,7 @@ using namespace std;
 // All tables changed to zero-index
 // Drawn from http://en.wikipedia.org/wiki/DES_supplementary_material
 // Initial permutation
-static const int IP[64] = {57,49,41,33,25,17,9,1,
+static const int IP_index[64] = {57,49,41,33,25,17,9,1,
                            59,51,43,35,27,19,11,3,
 			               61,53,45,37,29,21,13,5,
 			               63,55,47,39,31,23,15,7,
@@ -17,7 +17,7 @@ static const int IP[64] = {57,49,41,33,25,17,9,1,
 						   60,52,44,36,28,20,12,4,
 						   62,54,46,38,30,22,14,6};
 // Final permutation
-static const int FP[64] = {39,7,47,15,55,23,63,31,
+static const int FP_index[64] = {39,7,47,15,55,23,63,31,
                            38,6,46,14,54,22,62,30,
 						   37,5,45,13,53,21,61,29,
 						   36,4,44,12,52,20,60,28,
@@ -26,7 +26,7 @@ static const int FP[64] = {39,7,47,15,55,23,63,31,
 						   33,1,41,9,49,17,57,25,
 						   32,0,40,8,48,16,56,24};
 // Expand the right side for use in Feistel function
-static const int E[48] = {31,0,1,2,3,4,
+static const int E_index[48] = {31,0,1,2,3,4,
                           3,4,5,6,7,8,
 						  7,8,9,10,11,12,
 						  11,12,13,14,15,16,
@@ -35,12 +35,12 @@ static const int E[48] = {31,0,1,2,3,4,
 						  23,24,25,26,27,28,
 						  27,28,29,30,31,0};
 // Final permutation in Feistel function
-static const int P[32] = {11, 17,  5, 27, 25, 10, 20,  0,
+static const int P_index[32] = {11, 17,  5, 27, 25, 10, 20,  0,
                           13, 21,  3, 28, 29,  7, 18, 24,
                           31, 22, 12,  6, 26,  2, 16,  8,
                           14, 30,  4, 19,  1,  9, 15, 23};
 // S-boxes
-static const int S[8][64] = {
+static const int S_indices[8][64] = {
     // S1
         {   13,  1,  2, 15,  8, 13,  4,  8,  6, 10, 15,  3, 11,  7,  1,  4,
             10, 12,  9,  5,  3,  6, 14, 11,  5,  0,  0, 14, 12,  9,  7,  2,
@@ -83,7 +83,7 @@ static const int S[8][64] = {
             15,  5, 12, 11,  9,  3,  7, 14,  3, 10, 10,  0,  5,  6,  0, 13  }
 };
 // Form the key schedule state
-static const int PC1[56] = {
+static const int PC1_index[56] = {
     27, 19, 11, 31, 39, 47, 55,
     26, 18, 10, 30, 38, 46, 54,
     25, 17,  9, 29, 37, 45, 53,
@@ -94,7 +94,7 @@ static const int PC1[56] = {
     20, 12,  4,  0, 32, 40, 48
 };
 // Select subkeys
-static int PC2[48] = {
+static int PC2_index[48] = {
     24, 27, 20,  6, 14, 10,  3, 22,
      0, 17,  7, 12,  8, 23, 11,  5,
     16, 26,  1,  9, 19, 25,  4, 15,
@@ -110,9 +110,65 @@ void IP(bool* L[], bool* R[]) {
 	}
 	
 	for(int i = 0; i < 32; ++i) {
-		L[i] = block[IPindex(i)];
-		R[i] = block[IPindex(i+32)];
+		L[i] = block[IP_index[i]];
+		R[i] = block[IP_index[i+32]];
 	}
+}
+void FP(bool* L[], bool* R[]) {
+	bool* block = new bool[64];
+	for(int i = 0; i < 32; ++i) {
+		block[i] = L[i];
+		block[i + 32] = R[i];
+	}
+	
+	for(int i = 0; i < 32; ++i) {
+		L[i] = block[FP_index[i]];
+		R[i] = block[FP_index[i+32]];
+	}
+}
+
+F(bool* R[], bool* key[]) {
+	bool* result = new bool[48];
+	for(int i = 0; i < 48; ++i) {
+		result[i] = key[i] != R[E_index[i]];
+	}
+	for(int i = 0; i < 8; ++i) {
+		int index = (result[i*6]*2 + result[i*6 + 5])*16;
+		index += result[i*6 + 1]*8;
+		index += result[i*6 + 2]*4;
+		index += result[i*6 + 3]*2;
+		index += result[i*6 + 4];
+		int value = S[i][index];
+		R[i*4 + 0] = (value & 8);
+		R[i*4 + 1] = (value & 4);
+		R[i*4 + 2] = (value & 2;
+		R[i*4 + 3] = (value & 1;
+	}
+	for(int i = 0; i < 32; ++i) {
+		R[i] = R[P_index[i]];
+	}
+	
+}
+
+void encrypt(bool* L[], bool* R[], bool* key[]) {
+	bool** subkeys = new bool*[16];
+	for (int i = 0; i < 16; ++i) {
+		subkeys[i] = new bool[48];
+	}
+	// Replace this with the subkey function
+	generateSubkeys(subkeys);
+	IP(L, R);
+	
+	for (int i = 0; i < 16; ++i) {
+		F(R, subkey[i]);
+		for (int j = 0; j < 32; ++j) {
+			bool temp = R[j];
+			R[j] = L[j] != R[j];
+			L[j] = temp;
+		}
+	}
+	
+	FP(L, R);
 }
 
 int main(int argc, char* argv[]) {
